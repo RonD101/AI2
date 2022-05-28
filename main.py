@@ -25,6 +25,7 @@ def run_agents():
     agents = {
         "random": Agent.AgentRandom(),
         "greedy": Agent.AgentGreedy(),
+        "greedy_improved": submission.AgentGreedyImproved(),
         "minimax": submission.AgentMinimax(),
         "alphabeta": submission.AgentAlphaBeta(),
         "expectimax": submission.AgentExpectimax()
