@@ -34,7 +34,8 @@ class AgentGreedy(Agent):
         children = [env.clone() for _ in operators]
         for child, op in zip(children, operators):
             child.apply_operator(taxi_id, op)
-        children_heuristics = [self.heuristic(child, taxi_id) for child in children]
+        children_heuristics = [self.heuristic(
+            child, taxi_id) for child in children]
         max_heuristic = max(children_heuristics)
         index_selected = children_heuristics.index(max_heuristic)
         return operators[index_selected]
