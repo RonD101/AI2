@@ -52,6 +52,7 @@ def decide_by_cash_diff(env: TaxiEnv, taxi_id: int):
         return 0
 
 
+
 def cash_diff(env: TaxiEnv, taxi_id):
     cur_taxi = env.get_taxi(taxi_id)
     opp_taxi = env.get_taxi((taxi_id + 1) % 2)
