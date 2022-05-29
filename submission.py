@@ -1,5 +1,7 @@
 import sys
 import time
+from random import randrange
+
 from Agent import *
 from TaxiEnv import *
 
@@ -82,8 +84,6 @@ class AgentMinimax(Agent):
             depth += 1
             max_heuristic = max(children_heuristics)
             index_selected = children_heuristics.index(max_heuristic)
-            print(children_heuristics)
-        print(operators[index_selected])
         return operators[index_selected]
 
 
@@ -137,9 +137,8 @@ class AgentAlphaBeta(Agent):
             depth += 1
             max_heuristic = max(children_heuristics)
             index_selected = children_heuristics.index(max_heuristic)
-            print(children_heuristics)
-        print(operators[index_selected])
         return operators[index_selected]
+
 
 def RB_minimax_ab(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool, alpha, beta):
     if env.done():
@@ -177,65 +176,72 @@ def RB_minimax_ab(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool, 
 
 class AgentExpectimax(Agent):
     def run_step(self, env: TaxiEnv, agent_id, time_limit):
+        start_time = time.time()
         operators = env.get_legal_operators(agent_id)
         children = [env.clone() for _ in operators]
         for child, op in zip(children, operators):
             child.apply_operator(agent_id, op)
-        start_time = time.time()
-        time_to_run_algo = time_limit * 0.1
+        branchFactor = 8
+        safetyLimit = 0.1
         depth = 0
         index_selected = 0
-        while (time.time() - start_time < time_to_run_algo):
-           # print(depth)
-            children_heuristics = [RB_expectimax_ab(child, agent_id, depth, True, M_INF, INF) for child in children]
-            #print(children_heuristics)
-            depth += 1          
+        minimax_finish = False
+        while ((time.time() - start_time) / time_limit) * branchFactor + safetyLimit <= 1 and not minimax_finish:
+            children_heuristics = []
+            minimax_finish = True
+            for child in children:
+                child_heuristics, childFinish = RB_expectimax(child, agent_id, depth, True)
+                children_heuristics.append(child_heuristics)
+                minimax_finish = minimax_finish and childFinish
+            depth += 1
             max_heuristic = max(children_heuristics)
-            index_selected = children_heuristics.index(max_heuristic) 
-        print(operators[index_selected])
+            index_selected = children_heuristics.index(max_heuristic)
         return operators[index_selected]
 
-def RB_expectimax_ab(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool, alpha, beta):
+
+def RB_expectimax(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool):
     if env.done():
-        return env.get_balances()
+        if env.get_balances()[agent_id] - env.get_balances()[1 - agent_id] > 0:
+            return INF, True
+        else:
+            return M_INF, True
     if depth == 0:
-        return imp_heuristic(env, agent_id)
+        return imp_heuristic(env, agent_id), False
     operators = env.get_legal_operators(agent_id)
     children = [env.clone() for _ in operators]
-    if probabilistic(env, agent_id):
-        probs_list = calc_probs()
-        sum = 0
-        for child in children:
-            sum += probs_list[child] * RB_expectimax_ab(child, agent_id, depth - 1, True, alpha, beta)
-        return sum
-
     if is_agent_turn:
         cur_max = M_INF
-        for child in children:
-            v_max = RB_expectimax_ab(child, agent_id, depth - 1, False, alpha, beta)
+        is_finish = True
+        for child, op in zip(children, operators):
+            child.apply_operator(agent_id, op)
+            v_max, expectimax_finish = RB_expectimax(child, agent_id, depth - 1, False)
             cur_max = max(cur_max, v_max)
-            alpha = max(cur_max, alpha)
-            if cur_max >= beta:
-                return INF
-        return cur_max
-    else: 
+            is_finish = is_finish and expectimax_finish
+        return cur_max, is_finish
+    else:
+        is_finish = True
         cur_min = INF
-        for child in children:
-            v_min = RB_expectimax_ab(child, agent_id, depth - 1, True, alpha, beta)
-            cur_min = min(cur_min, v_min)
-            beta = min(cur_min, beta)
-            if cur_min <= alpha:
-                return M_INF
-        return cur_min
+        op = get_random_weighted(env, agent_id)
+        child = env.clone()
+        child.apply_operator(agent_id, op)
+        v_min, expectimax_finish = RB_expectimax(child, agent_id, depth - 1, True)
+        is_finish = is_finish and expectimax_finish
+        cur_min = min(cur_min, v_min)
+        return cur_min, is_finish
 
-def probabilistic(env: TaxiEnv, agent_id):
-    legal_ops = env.get_legal_operators(agent_id)
-    is_special_op = ("refuel" in legal_ops) or ("drop off passenger" in legal_ops) or ("pick up passenger" in legal_ops)
-    return is_special_op
 
-def calc_probs(env: TaxiEnv, agent_id):
-    legal_ops = env.get_legal_operators(agent_id)
-    x = 0
-    
-    probs = []
-    return probs
+def get_random_weighted(env: TaxiEnv, agent_id):
+    operators = env.get_legal_operators(agent_id)
+    weight = []
+    for op in operators:
+        if op == "refuel" or op == "drop off passenger" or op == "pick up passenger":
+            weight.append(2)
+        else:
+            weight.append(1)
+    w_ops = []
+    for i, op in enumerate(operators):
+        for j in range(weight[i]):
+            w_ops.append(op)
+    index = randrange(len(w_ops))
+    return w_ops[index]
+
