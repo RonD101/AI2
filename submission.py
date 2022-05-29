@@ -238,7 +238,7 @@ def get_random_weighted(env: TaxiEnv, agent_id):
     operators = env.get_legal_operators(agent_id)
     weight = []
     for op in operators:
-        if op == "refuel" or op == "drop off passenger" or op == "pick up passenger":
+        if op == "refuel" or op == "drop off passenger" or op == "pick up passenger" or op == "park":
             weight.append(2)
         else:
             weight.append(1)
