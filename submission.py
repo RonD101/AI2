@@ -60,41 +60,54 @@ def cash_diff(env: TaxiEnv, taxi_id):
 
 class AgentMinimax(Agent):
     def run_step(self, env: TaxiEnv, agent_id, time_limit):
+        start_time = time.time()
         operators = env.get_legal_operators(agent_id)
         children = [env.clone() for _ in operators]
         for child, op in zip(children, operators):
             child.apply_operator(agent_id, op)
-        start_time = time.time()
-        time_to_run_algo = time_limit * 0.1
+        branchFactor = 8
+        safetyLimit = 0.1
         depth = 0
         index_selected = 0
-        while (time.time() - start_time < time_to_run_algo):
+        minimaxFinish = False
+        while ((time.time() - start_time) / time_limit) * branchFactor + safetyLimit <= 1 and not minimaxFinish:
+            children_heuristics = []
+            minimaxFinish = True
+            for child in children:
+                child_heuristics, childFinish = RB_minimax(child, agent_id, depth, True)
+                children_heuristics.append(child_heuristics)
+                minimaxFinish = minimaxFinish and childFinish
             children_heuristics = [RB_minimax(child, agent_id, depth, True) for child in children]
-            depth += 1          
+            depth += 1
             max_heuristic = max(children_heuristics)
-            index_selected = children_heuristics.index(max_heuristic) 
+            index_selected = children_heuristics.index(max_heuristic)
         print(operators[index_selected])
         return operators[index_selected]
 
+
 def RB_minimax(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool):
     if env.done():
-        return env.get_balances()
+        return env.get_balances(), True
     if depth == 0:
-        return imp_heuristic(env, agent_id)
+        return imp_heuristic(env, agent_id), False
     legal_ops = env.get_legal_operators(agent_id)
     children = [env.clone() for _ in legal_ops]
     if is_agent_turn:
         cur_max = -sys.maxsize - 1
+        isFinish = True
         for child in children:
-            v_max = RB_minimax(child, agent_id, depth - 1, False)
+            v_max, minimaxFinish = RB_minimax(child, agent_id, depth - 1, not is_agent_turn)
             cur_max = max(cur_max, v_max)
-        return cur_max
+            isFinish = isFinish and minimaxFinish
+        return cur_max, isFinish
     else: 
         cur_min = sys.maxsize
+        isFinish = True
         for child in children:
-            v_max = RB_minimax(child, agent_id, depth - 1, True)
+            v_max, minimaxFinish = RB_minimax(child, agent_id, depth - 1, not is_agent_turn)
             cur_min = min(cur_min, v_max)
-        return cur_min
+            isFinish = isFinish and minimaxFinish
+        return cur_min, isFinish
 
 
 class AgentAlphaBeta(Agent):
