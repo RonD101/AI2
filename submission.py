@@ -97,6 +97,8 @@ def RB_minimax(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool):
         return imp_heuristic(env, agent_id), False
     legal_ops = env.get_legal_operators(agent_id)
     children = [env.clone() for _ in legal_ops]
+    for child, op in zip(children, legal_ops):
+        child.apply_operator(agent_id, op)
     if is_agent_turn:
         cur_max = M_INF
         is_finish = True
@@ -151,6 +153,8 @@ def RB_minimax_ab(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool, 
         return imp_heuristic(env, agent_id), False
     legal_ops = env.get_legal_operators(agent_id)
     children = [env.clone() for _ in legal_ops]
+    for child, op in zip(children, legal_ops):
+        child.apply_operator(agent_id, op)
     if is_agent_turn:
         cur_max = M_INF
         is_finish = True
@@ -186,7 +190,6 @@ class AgentExpectimax(Agent):
         depth = 0
         index_selected = 0
         while (time.time() - start_time < time_to_run_algo):
-           # print(depth)
             children_heuristics = [RB_expectimax_ab(child, agent_id, depth, True, M_INF, INF) for child in children]
             #print(children_heuristics)
             depth += 1          
@@ -196,46 +199,4 @@ class AgentExpectimax(Agent):
         return operators[index_selected]
 
 def RB_expectimax_ab(env: TaxiEnv, agent_id: int, depth: int, is_agent_turn: bool, alpha, beta):
-    if env.done():
-        return env.get_balances()
-    if depth == 0:
-        return imp_heuristic(env, agent_id)
-    operators = env.get_legal_operators(agent_id)
-    children = [env.clone() for _ in operators]
-    if probabilistic(env, agent_id):
-        probs_list = calc_probs()
-        sum = 0
-        for child in children:
-            sum += probs_list[child] * RB_expectimax_ab(child, agent_id, depth - 1, True, alpha, beta)
-        return sum
-
-    if is_agent_turn:
-        cur_max = M_INF
-        for child in children:
-            v_max = RB_expectimax_ab(child, agent_id, depth - 1, False, alpha, beta)
-            cur_max = max(cur_max, v_max)
-            alpha = max(cur_max, alpha)
-            if cur_max >= beta:
-                return INF
-        return cur_max
-    else: 
-        cur_min = INF
-        for child in children:
-            v_min = RB_expectimax_ab(child, agent_id, depth - 1, True, alpha, beta)
-            cur_min = min(cur_min, v_min)
-            beta = min(cur_min, beta)
-            if cur_min <= alpha:
-                return M_INF
-        return cur_min
-
-def probabilistic(env: TaxiEnv, agent_id):
-    legal_ops = env.get_legal_operators(agent_id)
-    is_special_op = ("refuel" in legal_ops) or ("drop off passenger" in legal_ops) or ("pick up passenger" in legal_ops)
-    return is_special_op
-
-def calc_probs(env: TaxiEnv, agent_id):
-    legal_ops = env.get_legal_operators(agent_id)
-    x = 0
-    
-    probs = []
-    return probs
+    return
