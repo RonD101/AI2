@@ -11,7 +11,7 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["greedy", "greedy_imporved", "-s" ,"1234", ""]
+            "args": ["greedy", "minimax", "-s" ,"1234", ""]
         }
     ]
 }
